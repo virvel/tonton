@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>SCALES</title>
+	<style type="text/css">
+		* {
+			color:#111;
+			--accent: #ffe838;
+			--black: #333333;
+			--white: #ffffff;
+			--bg: #e0e0e0;
+			background-color: var(--bg);
+		}
+
+		select, input, label {
+			border: none;
+			background-color: var(--bg);
+			color: var(--black);
+			font-size: 12pt;
+			padding: 6px;
+			margin: 2px;
+			font-family:  sans-serif;
+		    -moz-appearance:none; /* Firefox */
+		    -webkit-appearance:none; /* Safari and Chrome */
+		    appearance:none;
+		}
+		label {
+			width: 100px;
+			text-align: right;
+			display:table-cell;
+		}
+
+		select, input {
+			background-color: #505050;
+			color: #eee;
+			border-radius: 5px;
+			min-width: 120px;
+		}
+
+
+
+		form {
+			display:inline;
+		}
+
+		.accent {
+			fill: var(--accent);
+			stroke: var(--black);
+		}
+
+		.default {
+			fill: var(--black);
+			stroke: var(--black);
+		}
+
+		.accenthex {
+			fill: var(--accent);
+			stroke: var(--black);
+		}
+		.defaulthex {
+			fill: var(--white);
+			stroke: var(--black);
+		}
+
+		.whitekey {
+			fill: var(--white);
+			stroke: var(--black);
+		}
+
+		.blackkey {
+			fill: var(--black);
+			stroke: var(--black);
+		}
+
+		.accentkey {
+			fill: var(--accent);
+			stroke: var(--black);
+		}
+
+
+		.noteval {
+			font-size: 12px !important;
+		}
+
+	</style>
+	<script src="raphael-2.3.0/raphael.js"></script>
+</head>
+<body>
+<form>
+	<label for="note">Root</label>
+	<select name="note" id="note">
+		<option value="C">C</option>
+		<option value="C#">C#</option>
+		<option value="D">D</option>
+		<option value="D#">D#</option>
+		<option value="E">E</option>
+		<option value="F">F</option>
+		<option value="F#">F#</option>
+		<option value="G">G</option>
+		<option value="G#">G#</option>
+		<option value="A">A</option>
+		<option value="A#">A#</option>
+		<option value="B">B</option>
+	</select><br/>
+	<label for="chord">Chord</label>
+	<select name="chord" id="chord">
+		<option value="maj">Major</option>
+		<option value="min">Minor</option>
+		<option value="maj7"> Maj7</option>
+		<option value="min7"> Min7</option>
+		<option value="aug"> Augmented</option>
+		<option value="dim"> Diminished</option>
+	</select><br/>
+	<label for="scale">Scale</label>
+	<select name="scale" id="scale">
+		<option value="major">Major (Ionian) (1 2 3 4 5 6 7)</option>
+		<option value="dorian"> Dorian (1 2 &flat;3 4 5 6 &flat;7)</option>
+		<option value="phrygian">Phrygian (1 &flat;2 &flat;3 4 5 &flat;6 &flat;7)</option>
+		<option value="lydian">Lydian (1 2 3 #4 5 6 7)</option>
+		<option value="mixolydian">Mixolydian (1 2 3 4 5 6 &flat;7)</option>
+		<option value="natural_minor">Natural minor (Aeolian) (1 2 &flat;3 4 5 &flat;6 &flat;7)</option>
+		<option value="locrian">Locrian (1 &flat;2 &flat;3 4 &flat;5 &flat;6 &flat;7)</option>
+		<option value="harmonic_minor">Harmonic minor (1 2 &flat;3 4 5 &flat;6 7)</option>
+		<option value="melodic_minor">Melodic minor (1 2 &flat;3 4 5 6 7)</option>
+		<option value="phrygian_sharp6">Phrygian #6 (1 &flat;2 &flat;3 4 5 6 &flat;7</option>
+		<option value="lydian_augmented">Lydian Augmented (1 2 3 #4 #5 6 7)</option>
+		<option value="lydian_dominant">Lydian Dominant (1 2 3 #4 5 6 &flat; 7)</option>
+		<option value="mixolydian_sharp6">Mixolydian #6 (1 2 3 4 5 &flat;6 &flat;7)</option>
+		<option value="half_diminished">Half-Diminished (1 2 &flat;3 4 &flat;5 &flat;6 &flat;7)</option>
+		<option value="altered_dominant">Altered Dominant (1 &flat;2 &flat;3 &flat;4 &flat;5 &flat;6 &flat;7)</option>
+	</select><br/>
+	<label for="customscale">Custom</label>
+	<input type="text" id="customscale" name="customscale" value="0,2,3,5,7"></input><br/>
+	<label for="tuning">Tuning</label>
+	<input type="text" id="tuning" name="tuning" value="E,B,G,D,A,E"></input>
+</form><br/>
+<span id="intervals"></span>
+
+<script type="text/javascript">
+var notes = new Map([	[0, 'C'],
+						[1, 'C#'],
+						[2, 'D'],
+						[3, 'D#'],
+						[4, 'E'],
+						[5, 'F'],
+						[6, 'F#'],
+						[7, 'G'],
+						[8, 'G#'],
+						[9, 'A'],
+						[10, 'A#'],
+						[11, 'B']
+					]);
+
+var pitches = new Map([	['C', 0],
+						['C#', 1],
+						['D',  2],
+						['D#', 3],
+						['E',  4],
+						['F',  5],
+						['F#', 6],
+						['G',  7],
+						['G#', 8],
+						['A',  9],
+						['A#', 10],
+						['B', 11]
+					]);
+
+var scales = {
+	"major": 			[0, 2, 4, 5, 7, 9, 11],
+	"dorian": 			[0, 2, 3, 5, 7, 9, 10],
+	"phrygian": 		[0, 1, 3, 5, 7, 8, 10],
+	"lydian": 			[0, 2, 4, 6, 7, 9, 11],
+	"mixolydian": 		[0, 2, 4, 5, 7, 9, 10],
+	"natural_minor": 	[0, 2, 3, 5, 7, 8, 10],
+	"locrian": 			[0, 1, 3, 5, 6, 8, 10], 
+	"harmonic_minor": 	[0, 2, 3, 5, 7, 8, 11],
+	"melodic_minor": 	[0, 2, 3, 5, 7, 9, 11],
+	"phrygian_sharp6": 	[0, 1, 3, 5, 7, 9, 10],
+	"lydian_augmented": [0, 2, 4, 6, 8, 9, 11],
+	"lydian_dominant":  [0, 2, 4, 6, 7, 9, 10],
+	"mixolydian_sharp6": [0, 2, 4, 5, 7, 8, 10],
+	"half_diminished": [0, 2, 3, 5, 6, 8, 10],
+	"altered_dominant": [0, 1, 3, 4, 6, 8, 10],
+	"maj": [0, 4, 7],
+	"min": [0, 3, 7],
+	"maj7": [0, 4, 7, 10],
+	"min7": [0, 3, 7, 10],
+	"dim": [0, 3, 6],
+	"aug": [0, 4, 8]
+}
+
+var _scale = scales["major"];
+var _tuning = ['E', 'B', 'G', 'D', 'A', 'E']
+var _note = 0;
+
+
+const paper = Raphael(20, 225, 1400, 700);
+
+
+
+var interval = ["P1", "m2", "M2", "m3", "M3", "P4", "d5", "P5", "m6", "M6", "m7", "M7", "P8"];
+
+
+draw();
+function draw() {
+
+	console.log(_scale);
+	paper.clear();
+	sscale = _scale.map(n => (n + _note)%12);
+	drawNeck(_tuning, sscale);
+	drawKeys(sscale);
+	drawCircleOfFifths(sscale);
+	drawHexGrid(5,5,30,sscale);
+	document.getElementById("intervals").innerHTML =  _scale.map(n => interval[n]) + "<br />" +_scale;
+}
+
+function drawNeck(tuning, sscale) {
+
+	const number_strings = tuning.length;
+	const frets = 24;
+	const fret_width = 50;
+	const string_height = 30;
+	const neck_length = frets*fret_width;
+	const neck_width = (number_strings-1)*string_height;
+
+	for (let i = 0; i < number_strings; ++i)
+	{
+		var z = ""
+		z += "M20 " + (i*string_height+20);
+		z += "L" + (neck_length+20) + " " + (i*string_height+20);
+		paper.path(z);
+		paper.text(5, i*string_height+20, _tuning[i]);
+	}
+
+	for (let i = 1; i < frets+1; ++i)
+	{
+		var a = fret_width*i+20;
+		var z = ""
+		z += "M"+ a + " 20";
+		z += "L" + a + " " + (neck_width+20);
+		paper.path(z);
+		paper.text(fret_width*i + fret_width/2-30, 5, i);
+	}
+
+	{
+	var z = ""
+	z += "M20 20";
+	z += "L20 " + (neck_width+20);
+	var p = paper.path(z);
+	p.attr("stroke-width", "3");
+	}
+
+	{
+	var z = ""
+	z += "M"+ (fret_width*12+20) + " 20";
+	z += "L" + (fret_width*12+20) + " " + (neck_width+20);
+	var p = paper.path(z);
+	p.attr("stroke-width", "3");
+	}
+
+
+	tuning.forEach((t,j) => {
+
+		var scaled = sscale.map(n => mod(n-pitches.get(t),12));
+		scaled = scaled.concat(scaled.map(n => n+12));
+		scaled.forEach( (s,i) => {
+				var x = (s === 0) ? 0 : fret_width*(s-1) + fret_width/2;
+				var c = paper.circle(x+20, j*string_height+20, 5);
+				c.attr("r", "12px");
+				var n = paper.text(x+20, j*string_height+21, interval[_scale[i%_scale.length]]);
+				n.attr("class", "noteval");
+				if ((i%7) == 0)
+				{
+					c.attr("class", "accent");
+				}
+				else {
+					c.attr("class", "whitekey");
+				}
+			}
+		);
+	});
+}
+
+function mod(x, n) {
+	if (x >= 0)
+		return x%n;
+	else
+		return n-(-x)%n;
+}
+
+
+function drawKeys(sscale) {
+	
+	var y = _tuning.length*35;
+
+	var nats = [0,2,4,5,7,9,11];
+	nats = nats.concat(nats.map( x => x+12));
+	var ins = nats.map(value => sscale.includes(value%12) ? 1 : 0);
+	nats.forEach((s,i) => {
+		var k = paper.rect(30*i,y,30,100);
+		var c = ins[i] ? "accentkey" : "whitekey";
+		k.attr("class", c);
+	});
+
+	var acc = [0,1,3,4,5];
+	var ks = [1,3,6,8,10];
+	acc = acc.concat(acc.map(x => x+7));
+	ks = ks.concat(ks.map(x => x+12));
+	ins = ks.map(value => sscale.includes(value%12) ? 1 : 0);
+	acc.forEach((s,i) => {
+		var k = paper.rect(20+30*s,y,20,60);
+		var c = ins[i] ? "accentkey" : "blackkey";
+		k.attr("class", c);
+	});
+}
+
+function drawCircleOfFifths(sscale) {
+
+	const innerR = 30;
+	const outerR = 100;
+	const centerX = 900;
+	const centerY = _tuning.length*35+75;
+	var curr = 0;
+
+	var n = 12;
+	for (let i = 0; i < n; ++i) {
+		const twopi = 2*Math.PI/n;
+		var outerx1 = centerX + outerR * Math.cos(twopi * i);
+		var outery1 = centerY + outerR * Math.sin(twopi * i);
+		var outerx2 = centerX + outerR * Math.cos(twopi * (i + 1));
+		var outery2 = centerY + outerR * Math.sin(twopi * (i + 1));
+		var innerx1 = centerX + innerR * Math.cos(twopi * i);
+		var innery1 = centerY + innerR * Math.sin(twopi * i);
+		var innerx2 = centerX + innerR * Math.cos(twopi * (i + 1));
+		var innery2 = centerY + innerR * Math.sin(twopi * (i + 1));
+		var tx = centerX + (outerR-25) * Math.cos(twopi * (i+1/2));
+		var ty = centerY + (outerR-25) * Math.sin(twopi * (i+1/2));
+		var v = ["M", outerx1, outery1]
+		v += ["A", outerR, outerR, " 0 0,1 ", outerx2, ",", outery2];
+		v += ["L", innerx2, innery2];
+		v += ["A", innerR, innerR, " 0 0,0 ", innerx1, ",", innery1];
+		v += ["z"];
+		var a = paper.path(v);
+		paper.text(tx, ty, notes.get(curr));
+		if (sscale.includes(curr))
+			a.attr("class", "accent");
+		else
+			a.attr("class", "bg");
+		curr = (curr + 7)%12;
+
+	};
+}
+
+function drawHex(x, y, r, note, sscale) {
+
+	const inc = Math.PI/3;
+	const offsetX = 475;
+	const offsetY = _tuning.length*35;
+
+	var p = ["M", offsetX + x + r * Math.cos(-Math.PI/2), offsetY + y + r * Math.sin(-Math.PI/2)];
+	for (let i = 0; i <= 6; i++) {
+		p += [
+				"L",
+				offsetX + r * Math.cos(inc*i-Math.PI/2) + x,
+				offsetY + r * Math.sin(inc*i-Math.PI/2) + y
+			];
+	}
+	if (!sscale.includes(pitches.get(note)))
+		paper.path(p).attr("class", "bg");
+	else
+		paper.path(p).attr("class", "accenthex");
+	paper.text(offsetX + x, offsetY + y, note);
+}
+
+function drawHexGrid(rows, cols, r, sscale) {
+
+	const w = r*Math.sqrt(3);
+
+	for (let i = 0; i <= rows; i++) {
+		for (let j = 0; j <= cols; j++) {
+			var x = 7 * i;
+			var y = 7*4*Math.ceil(j/2);
+			y += 7*3*Math.floor(j/2);
+			note = notes.get((x + y)%12);
+			if (j % 2 == 0) {
+				drawHex(w*i, j*3*r/2, r, note, sscale);
+			}
+			else {
+				drawHex(w*i + w/2, j*3*r/2, r, note, sscale);
+			}
+		}
+	}
+}
+
+
+document.getElementById("note").addEventListener("change", function() {
+	_note = pitches.get(document.getElementById("note").value);
+	draw();
+});
+
+document.getElementById("scale").addEventListener("change", function() {
+	_scale = scales[document.getElementById("scale").value];
+	draw();
+});
+
+document.getElementById("chord").addEventListener("change", function() {
+	_scale = scales[document.getElementById("chord").value];
+	draw();
+});
+
+document.getElementById("customscale").addEventListener("change", function() {
+	_scale = document.getElementById("customscale").value.split(",");
+	_scale = _scale.map(n => parseInt(n));
+	draw();
+});
+
+document.getElementById("tuning").addEventListener("change", function() {
+	_tuning = document.getElementById("tuning").value.split(",");
+	draw();
+});
+
+
+</script>
+</body>
+</html>
